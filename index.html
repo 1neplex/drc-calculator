@@ -316,6 +316,7 @@
             <button class="tab-btn active" id="btn-tab-single" onclick="switchTab('tab-single')">Single Eval</button>
             <button class="tab-btn" id="btn-tab-matchup" onclick="switchTab('tab-matchup')">Matchup Analysis</button>
             <button class="tab-btn" id="btn-tab-bulk" onclick="switchTab('tab-bulk')">Bulk Processor</button>
+            <button class="tab-btn" id="btn-tab-ref" onclick="switchTab('tab-ref')">Reference Data</button>
         </div>
 
         <!-- Single Eval Tab -->
@@ -423,6 +424,47 @@
                 </div>
             </fieldset>
             <div class="footer-text">
+                © Copyright Dex Ranking Consortium. All Rights Reserved.
+            </div>
+        </div>
+
+        <!-- Reference Data Tab -->
+        <div id="tab-ref" class="tab-content" style="overflow-y: auto;">
+            <fieldset>
+                <legend>Tier Rankings (Overall Stats)</legend>
+                <table style="width:100%; border-collapse: collapse; background: #ffffff; border: 1px solid #808080;">
+                    <tr style="background: #c0c0c0; border-bottom: 2px solid #808080;">
+                        <th style="text-align: left; padding: 4px 8px; border-right: 1px solid #808080;">Tier Designation</th>
+                        <th style="text-align: left; padding: 4px 8px;">Value Threshold</th>
+                    </tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #ff0000; border-right: 1px solid #808080;">God</td><td style="padding: 4px 8px;">3000+</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #ff8c00; border-right: 1px solid #808080;">Best</td><td style="padding: 4px 8px;">2200 - 2999</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #008000; border-right: 1px solid #808080;">Good</td><td style="padding: 4px 8px;">1500 - 2199</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #0000ff; border-right: 1px solid #808080;">Decent</td><td style="padding: 4px 8px;">1000 - 1499</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #800080; border-right: 1px solid #808080;">Mid</td><td style="padding: 4px 8px;">600 - 999</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #808080; border-right: 1px solid #808080;">Midass</td><td style="padding: 4px 8px;">350 - 599</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #a52a2a; border-right: 1px solid #808080;">Trash</td><td style="padding: 4px 8px;">150 - 349</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; font-weight: bold; color: #556b2f; border-right: 1px solid #808080;">Trashass</td><td style="padding: 4px 8px;">50 - 149</td></tr>
+                    <tr><td style="padding: 4px 8px; font-weight: bold; color: #000000; border-right: 1px solid #808080;">Absolute Garbage</td><td style="padding: 4px 8px;">0 - 49</td></tr>
+                </table>
+            </fieldset>
+
+            <fieldset>
+                <legend>Doctrine Bias Classifications</legend>
+                <table style="width:100%; border-collapse: collapse; background: #ffffff; border: 1px solid #808080;">
+                    <tr style="background: #c0c0c0; border-bottom: 2px solid #808080;">
+                        <th style="text-align: left; padding: 4px 8px; border-right: 1px solid #808080;">Classification Name</th>
+                        <th style="text-align: left; padding: 4px 8px;">Bias Range (ATK - HP)</th>
+                    </tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; border-right: 1px solid #808080;">Heavy striker / glass-cannon</td><td style="padding: 4px 8px;">&ge; +800</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; border-right: 1px solid #808080;">Strike-leaning</td><td style="padding: 4px 8px;">+300 to +799</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; border-right: 1px solid #808080;">Balanced</td><td style="padding: 4px 8px;">-299 to +299</td></tr>
+                    <tr style="border-bottom: 1px dotted #a0a0a0;"><td style="padding: 4px 8px; border-right: 1px solid #808080;">Durability-leaning</td><td style="padding: 4px 8px;">-300 to -799</td></tr>
+                    <tr><td style="padding: 4px 8px; border-right: 1px solid #808080;">Endurance platform</td><td style="padding: 4px 8px;">&le; -800</td></tr>
+                </table>
+            </fieldset>
+            
+            <div class="footer-text" style="margin-top: auto;">
                 © Copyright Dex Ranking Consortium. All Rights Reserved.
             </div>
         </div>
