@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRC Official Calculator v2.4</title>
+    <style>
+        /* Early 2000s / Windows 98 Aesthetic */
+        body {
+            background-color: #c0c0c0;
+            font-family: "MS Sans Serif", "Tahoma", "Verdana", sans-serif;
+            font-size: 11px;
+            color: #000;
+            margin: 0;
+            height: 100vh;
+            user-select: none;
+        }
+
+        /* The Main Window */
+        .window {
+            background-color: #c0c0c0;
+            width: 100vw;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tabs System */
+        .tabs {
+            display: flex;
+            margin: 4px 4px 0 4px;
+            gap: 2px;
+            z-index: 1;
+        }
+        
+        .tab-btn {
+            background: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: none;
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            outline: none;
+            margin-bottom: -1px;
+        }
+        
+        .tab-btn.active {
+            padding-top: 6px;
+            margin-top: -2px;
+            background: #c0c0c0;
+            border-bottom: 2px solid #c0c0c0; /* hide the container border */
+            z-index: 3;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            padding: 10px;
+            margin: 0 4px 4px 4px;
+            z-index: 2;
+            position: relative;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* History & Bulk Areas */
+        .history-box, .bulk-area {
+            background: #ffffff;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 4px;
+            min-height: 60px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 11px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Expanding Fieldsets */
+        .expand-fieldset {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            margin-bottom: 10px;
+        }
+        
+        .expand-fieldset > .result-box, 
+        .expand-fieldset > .history-box {
+            flex: 1;
+            height: auto !important;
+            margin-top: 5px;
+        }
+        
+        .bulk-input {
+            width: 100%;
+            height: 80px;
+            box-sizing: border-box;
+            resize: none;
+            margin-bottom: 10px;
+        }
+
+        /* Matchup Layout */
+        .matchup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Title Bar */
+        .title-bar {
+            background: linear-gradient(90deg, #000080, #1084d0);
+            padding: 3px 4px 3px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2px;
+        }
+
+        .title-bar-text {
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Fake Title Bar Buttons */
+        .title-bar-controls {
+            display: flex;
+            gap: 2px;
+        }
+
+        .title-bar-button {
+            width: 16px;
+            height: 14px;
+            background: #c0c0c0;
+            border-top: 1px solid #ffffff;
+            border-left: 1px solid #ffffff;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 2px;
+            cursor: default;
+        }
+
+        /* Window Content */
+        .window-body {
+            padding: 8px 12px 12px 12px;
+        }
+
+        /* Group Boxes */
+        fieldset {
+            border-top: 1px solid #ffffff;
+            border-left: 1px solid #ffffff;
+            border-right: 1px solid #808080;
+            border-bottom: 1px solid #808080;
+            padding: 10px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        legend {
+            background: #c0c0c0;
+            padding: 0 4px;
+            color: #000;
+        }
+
+        /* Forms and Inputs */
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .form-row label {
+            flex: 1;
+        }
+
+        .form-row input, .form-row select {
+            flex: 1.5;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 3px;
+            background: #ffffff;
+            font-family: inherit;
+            font-size: 11px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .form-row input:focus, .form-row select:focus {
+            background: #000080;
+            color: white;
+        }
+
+        /* Classic Button */
+        .button-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            background: #c0c0c0;
+            padding: 4px 15px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        button:active {
+            border-top: 2px solid #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 5px 14px 3px 16px; /* Offset to simulate pressing down */
+        }
+
+        button:focus {
+            border: 2px dotted #000; /* Accessibility focus ring */
+            padding: 3px 14px;
+        }
+
+        /* Results Area */
+        .result-box {
+            background: #ffffff;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 8px;
+            min-height: 90px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 12px;
+            overflow-y: auto;
+        }
+
+        .footer-text {
+            text-align: center;
+            color: #808080;
+            margin-top: 5px;
+            font-size: 9px;
+        }
+
+        /* Simulated Modal/Message Box Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .message-box {
+            background-color: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            width: 250px;
+            padding: 2px;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+        }
+        .msg-content {
+            padding: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="window">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <div class="title-bar-text">
+                <span style="font-size:14px; margin-right:3px;">◧</span> 
+                DRC Unit Evaluator.exe
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" id="btn-tab-single" onclick="switchTab('tab-single')">Single Eval</button>
+            <button class="tab-btn" id="btn-tab-matchup" onclick="switchTab('tab-matchup')">Matchup Analysis</button>
+            <button class="tab-btn" id="btn-tab-bulk" onclick="switchTab('tab-bulk')">Bulk Processor</button>
+        </div>
+
+        <!-- Single Eval Tab -->
+        <div id="tab-single" class="tab-content active">
+            <!-- Input Fields -->
+            <fieldset>
+                <legend>Unit Specifications</legend>
+                
+                <div class="form-row">
+                    <label for="dex-select">Target Dex:</label>
+                    <select id="dex-select">
+                        <option value="Ballsdex (Countryballs)">Ballsdex (Countryballs)</option>
+                        <option value="TankDex (Armored Vehicles)">TankDex (Armored Vehicles)</option>
+                        <option value="Aviationdex (Aircraft)">Aviationdex (Aircraft)</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label for="name-input">Unit Name:</label>
+                    <input type="text" id="name-input" placeholder="e.g. Poland, M1 Abrams...">
+                </div>
+
+                <div class="form-row">
+                    <label for="hp-input">Health Points (HP):</label>
+                    <input type="number" id="hp-input" min="0" placeholder="e.g. 1500">
+                </div>
+
+                <div class="form-row">
+                    <label for="atk-input">Attack Power (ATK):</label>
+                    <input type="number" id="atk-input" min="0" placeholder="e.g. 2000">
+                </div>
+            </fieldset>
+
+            <div class="button-row">
+                <button onclick="calculateStats()">Calculate</button>
+                <button onclick="copyToClipboard(event)">Copy Report</button>
+                <button onclick="resetForm()">Clear</button>
+            </div>
+
+            <!-- Output/Results -->
+            <fieldset>
+                <legend>Processing Output</legend>
+                <div id="results" class="result-box">
+                    Awaiting input parameters...
+                </div>
+            </fieldset>
+
+            <!-- Session History -->
+            <fieldset class="expand-fieldset">
+                <legend>Session Log</legend>
+                <div id="session-history" class="history-box">Session initialized...</div>
+            </fieldset>
+
+            <div class="footer-text">
+                © Copyright Dex Ranking Consortium. All Rights Reserved.
+            </div>
+        </div>
+
+        <!-- Matchup Tab -->
+        <div id="tab-matchup" class="tab-content">
+            <div class="matchup-grid">
+                <fieldset>
+                    <legend>Unit A</legend>
+                    <div class="form-row"><input type="text" id="mu-name-a" placeholder="Name A" style="width:100%"></div>
+                    <div class="form-row"><input type="number" id="mu-hp-a" placeholder="HP" style="width:100%"></div>
+                    <div class="form-row"><input type="number" id="mu-atk-a" placeholder="ATK" style="width:100%"></div>
+                </fieldset>
+                <fieldset>
+                    <legend>Unit B</legend>
+                    <div class="form-row"><input type="text" id="mu-name-b" placeholder="Name B" style="width:100%"></div>
+                    <div class="form-row"><input type="number" id="mu-hp-b" placeholder="HP" style="width:100%"></div>
+                    <div class="form-row"><input type="number" id="mu-atk-b" placeholder="ATK" style="width:100%"></div>
+                </fieldset>
+            </div>
+            <div class="button-row">
+                <button onclick="calculateMatchup()">Analyze Matchup</button>
+                <button onclick="clearMatchup()">Clear</button>
+            </div>
+            <fieldset class="expand-fieldset">
+                <legend>Tactical Analysis</legend>
+                <div id="matchup-results" class="result-box" style="min-height: 110px;">
+                    Awaiting combatants...
+                </div>
+            </fieldset>
+            <div class="footer-text">
+                © Copyright Dex Ranking Consortium. All Rights Reserved.
+            </div>
+        </div>
+
+        <!-- Bulk Processor Tab -->
+        <div id="tab-bulk" class="tab-content">
+            <fieldset>
+                <legend>Batch Input</legend>
+                <div style="margin-bottom: 5px; color: #000080;">Format per line: Name, HP, ATK (e.g. T-72, 1200, 1600)</div>
+                <textarea id="bulk-input" class="history-box bulk-input" placeholder="T-34, 1000, 1400&#10;M4 Sherman, 1100, 1300"></textarea>
+                <div class="button-row" style="margin-bottom: 0;">
+                    <button onclick="processBulk()">Process Batch</button>
+                    <button onclick="clearBulk()">Clear</button>
+                </div>
+            </fieldset>
+            <fieldset class="expand-fieldset">
+                <legend>Evaluation Roster</legend>
+                <div id="bulk-results" class="result-box" style="min-height: 130px;">
+                    Awaiting batch data...
+                </div>
+            </fieldset>
+            <div class="footer-text">
+                © Copyright Dex Ranking Consortium. All Rights Reserved.
+            </div>
+        </div>
+    </div>
+
+    <!-- Retro Error Message Box -->
+    <div id="error-modal" class="modal-overlay">
+        <div class="message-box">
+            <div class="title-bar">
+                <div class="title-bar-text">DRC Error</div>
+                <div class="title-bar-controls">
+                    <div class="title-bar-button" onclick="closeModal()">X</div>
+                </div>
+            </div>
+            <div class="msg-content">
+                <div style="display:flex; align-items:center; gap: 10px; margin-bottom: 15px;">
+                    <div style="background: red; color: white; border-radius: 50%; width: 24px; height: 24px; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:16px;">X</div>
+                    <span id="error-text">Fatal Error.</span>
+                </div>
+                <button onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Core Logic Refactored for Reusability
+        function evaluateUnit(hp, atk) {
+            const overallRaw = hp + ((atk * 2) / 3);
+            const overallValue = Math.round(overallRaw);
+
+            let overallRank = "";
+            let rankColor = "#000";
+            if (overallValue >= 3000) { overallRank = "God"; rankColor = "#ff0000"; }
+            else if (overallValue >= 2200) { overallRank = "Best"; rankColor = "#ff8c00"; }
+            else if (overallValue >= 1500) { overallRank = "Good"; rankColor = "#008000"; }
+            else if (overallValue >= 1000) { overallRank = "Decent"; rankColor = "#0000ff"; }
+            else if (overallValue >= 600) { overallRank = "Mid"; rankColor = "#800080"; }
+            else if (overallValue >= 350) { overallRank = "Midass"; rankColor = "#808080"; }
+            else if (overallValue >= 150) { overallRank = "Trash"; rankColor = "#a52a2a"; }
+            else if (overallValue >= 50) { overallRank = "Trashass"; rankColor = "#556b2f"; }
+            else { overallRank = "Absolute Garbage"; rankColor = "#000000"; }
+
+            const biasValueRaw = atk - hp;
+            const biasValue = Math.round(biasValueRaw);
+            
+            let biasMeaning = "";
+            if (biasValue >= 800) biasMeaning = "Heavy striker / glass-cannon";
+            else if (biasValue >= 300) biasMeaning = "Strike-leaning";
+            else if (biasValue >= -299) biasMeaning = "Balanced";
+            else if (biasValue >= -799) biasMeaning = "Durability-leaning";
+            else biasMeaning = "Endurance platform";
+
+            const biasString = biasValue > 0 ? `+${biasValue}` : `${biasValue}`;
+
+            return { overallValue, overallRank, rankColor, biasValue, biasString, biasMeaning };
+        }
+
+        // --- UI & State ---
+        let lastReportText = "";
+        let sessionLog = [];
+
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            // Activate selected
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
+        }
+
+        // --- Single Eval Functions ---
+        function calculateStats() {
+            const nameStr = document.getElementById('name-input').value || "Unnamed Unit";
+            const hpStr = document.getElementById('hp-input').value;
+            const atkStr = document.getElementById('atk-input').value;
+            const dexType = document.getElementById('dex-select').value;
+            const resultBox = document.getElementById('results');
+
+            if (hpStr === "" || atkStr === "") {
+                showError("Please enter valid numerical values for both HP and ATK.");
+                return;
+            }
+
+            const hp = parseFloat(hpStr);
+            const atk = parseFloat(atkStr);
+
+            if (hp < 0 || atk < 0) {
+                showError("Stats cannot be negative values.");
+                return;
+            }
+
+            const stats = evaluateUnit(hp, atk);
+
+            // Render Output
+            resultBox.innerHTML = `
+                <div style="border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px;">
+                    <strong>SYSTEM:</strong> ${dexType}<br>
+                    <strong>UNIT NAME:</strong> ${nameStr}
+                </div>
+                <div><strong>OVERALL STATS:</strong> ${stats.overallValue}</div>
+                <div><strong>TIER RANKING:</strong> <span style="color: ${stats.rankColor}; font-weight: bold;">[${stats.overallRank}]</span></div>
+                <br>
+                <div><strong>BIAS RATING:</strong> ${stats.biasString}</div>
+                <div><strong>CLASSIFICATION:</strong> ${stats.biasMeaning}</div>
+                <br>
+                <div style="color: #000080;">> Query Processed Successfully.</div>
+            `;
+
+            // Prepare text for Clipboard
+            lastReportText = `[DRC REPORT] ${nameStr} (${dexType}) | Overall: ${stats.overallValue} [${stats.overallRank}] | Bias: ${stats.biasString} (${stats.biasMeaning})`;
+            
+            // Add to Session History
+            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            sessionLog.unshift(`[${timeStr}] ${nameStr} - OVR: ${stats.overallValue} | Bias: ${stats.biasString}`);
+            document.getElementById('session-history').innerText = sessionLog.join('\n');
+        }
+
+        function copyToClipboard(event) {
+            if (!lastReportText) {
+                showError("No report available to copy. Calculate stats first.");
+                return;
+            }
+            // Fallback copy method compatible with older iframes
+            const textArea = document.createElement("textarea");
+            textArea.value = lastReportText;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                // Temporarily change button text to show success
+                const btn = event.target;
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                setTimeout(() => btn.innerText = originalText, 1500);
+            } catch (err) {
+                showError("Clipboard copy failed. Your browser may be restricting access.");
+            }
+            textArea.remove();
+        }
+
+        function resetForm() {
+            document.getElementById('name-input').value = "";
+            document.getElementById('hp-input').value = "";
+            document.getElementById('atk-input').value = "";
+            document.getElementById('dex-select').selectedIndex = 0;
+            document.getElementById('results').innerHTML = "Awaiting input parameters...";
+            lastReportText = "";
+        }
+
+        // --- Matchup Functions ---
+        function calculateMatchup() {
+            const nameA = document.getElementById('mu-name-a').value || "Unit A";
+            const hpA = parseFloat(document.getElementById('mu-hp-a').value);
+            const atkA = parseFloat(document.getElementById('mu-atk-a').value);
+
+            const nameB = document.getElementById('mu-name-b').value || "Unit B";
+            const hpB = parseFloat(document.getElementById('mu-hp-b').value);
+            const atkB = parseFloat(document.getElementById('mu-atk-b').value);
+
+            if (isNaN(hpA) || isNaN(atkA) || isNaN(hpB) || isNaN(atkB)) {
+                showError("Please enter valid numerical values for both units.");
+                return;
+            }
+
+            const statsA = evaluateUnit(hpA, atkA);
+            const statsB = evaluateUnit(hpB, atkB);
+            const out = document.getElementById('matchup-results');
+
+            let winnerText = "";
+            if (statsA.overallValue > statsB.overallValue) {
+                winnerText = `<strong style="color:green;">${nameA} wins</strong> the overall stat comparison (+${statsA.overallValue - statsB.overallValue} lead).`;
+            } else if (statsB.overallValue > statsA.overallValue) {
+                winnerText = `<strong style="color:green;">${nameB} wins</strong> the overall stat comparison (+${statsB.overallValue - statsA.overallValue} lead).`;
+            } else {
+                winnerText = "<strong>It is a dead tie</strong> in overall stats.";
+            }
+
+            let flavorText = `<strong>${nameA}</strong> is a ${statsA.biasMeaning.toLowerCase()} while <strong>${nameB}</strong> operates as a ${statsB.biasMeaning.toLowerCase()}. `;
+            
+            if (statsA.biasValue > 500 && statsB.biasValue < -500) {
+                flavorText += `Classic striking power vs endurance wall dynamic.`;
+            }
+
+            out.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px;">
+                    <div><strong>${nameA}</strong><br>OVR: ${statsA.overallValue} <span style="color:${statsA.rankColor}">[${statsA.overallRank}]</span></div>
+                    <div><strong>VS</strong></div>
+                    <div style="text-align:right;"><strong>${nameB}</strong><br>OVR: ${statsB.overallValue} <span style="color:${statsB.rankColor}">[${statsB.overallRank}]</span></div>
+                </div>
+                <p style="margin: 5px 0;">${winnerText}</p>
+                <p style="margin: 5px 0; color: #333;">${flavorText}</p>
+            `;
+        }
+
+        function clearMatchup() {
+            ['mu-name-a', 'mu-hp-a', 'mu-atk-a', 'mu-name-b', 'mu-hp-b', 'mu-atk-b'].forEach(id => document.getElementById(id).value = "");
+            document.getElementById('matchup-results').innerHTML = "Awaiting combatants...";
+        }
+
+        // --- Bulk Processor Functions ---
+        function processBulk() {
+            const rawText = document.getElementById('bulk-input').value;
+            const lines = rawText.split('\n');
+            const resultsBox = document.getElementById('bulk-results');
+            
+            let parsedUnits = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const parts = line.split(',');
+                if (parts.length >= 3) {
+                    const name = parts[0].trim();
+                    const hp = parseFloat(parts[1].trim());
+                    const atk = parseFloat(parts[2].trim());
+
+                    if (!isNaN(hp) && !isNaN(atk)) {
+                        const stats = evaluateUnit(hp, atk);
+                        parsedUnits.push({ name, hp, atk, stats });
+                    }
+                }
+            }
+
+            if (parsedUnits.length === 0) {
+                showError("No valid data found. Ensure format is: Name, HP, ATK");
+                return;
+            }
+
+            // Sort by Overall Descending
+            parsedUnits.sort((a, b) => b.stats.overallValue - a.stats.overallValue);
+
+            // Calculate Batch Summary Stats
+            const count = parsedUnits.length;
+            let sumOverall = 0;
+            let sumBias = 0;
+            let scores = [];
+
+            parsedUnits.forEach(u => {
+                sumOverall += u.stats.overallValue;
+                sumBias += u.stats.biasValue;
+                scores.push(u.stats.overallValue);
+            });
+
+            const avgScore = Math.round(sumOverall / count);
+            const avgBias = Math.round(sumBias / count);
+
+            // Median Score
+            scores.sort((a, b) => a - b);
+            let medianScore = 0;
+            const mid = Math.floor(count / 2);
+            if (count % 2 === 0) {
+                medianScore = Math.round((scores[mid - 1] + scores[mid]) / 2);
+            } else {
+                medianScore = scores[mid];
+            }
+
+            // Highest and Lowest Units
+            const highestUnit = parsedUnits[0]; // Already sorted descending by overall value
+            const lowestUnit = parsedUnits[count - 1];
+
+            // Hangar Tier (Using Average Score)
+            let hangarTier = "";
+            let tierColor = "#000";
+            if (avgScore >= 3000) { hangarTier = "God"; tierColor = "#ff0000"; }
+            else if (avgScore >= 2200) { hangarTier = "Best"; tierColor = "#ff8c00"; }
+            else if (avgScore >= 1500) { hangarTier = "Good"; tierColor = "#008000"; }
+            else if (avgScore >= 1000) { hangarTier = "Decent"; tierColor = "#0000ff"; }
+            else if (avgScore >= 600) { hangarTier = "Mid"; tierColor = "#800080"; }
+            else if (avgScore >= 350) { hangarTier = "Midass"; tierColor = "#808080"; }
+            else if (avgScore >= 150) { hangarTier = "Trash"; tierColor = "#a52a2a"; }
+            else if (avgScore >= 50) { hangarTier = "Trashass"; tierColor = "#556b2f"; }
+            else { hangarTier = "Absolute Garbage"; tierColor = "#000000"; }
+
+            // Doctrine Bias (Using Average Bias)
+            let doctrineMeaning = "";
+            if (avgBias >= 800) doctrineMeaning = "Heavy striker / glass-cannon";
+            else if (avgBias >= 300) doctrineMeaning = "Strike-leaning";
+            else if (avgBias >= -299) doctrineMeaning = "Balanced";
+            else if (avgBias >= -799) doctrineMeaning = "Durability-leaning";
+            else doctrineMeaning = "Endurance platform";
+            
+            const biasStr = avgBias > 0 ? `+${avgBias}` : `${avgBias}`;
+
+            let htmlOut = `
+                <div style="border-bottom: 2px dashed #808080; margin-bottom: 10px; padding-bottom: 10px; font-family: 'MS Sans Serif', sans-serif;">
+                    <div style="font-weight:bold; margin-bottom: 8px; text-decoration: underline;">BATCH SUMMARY REPORT</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        <div><strong>Average Score:</strong> ${avgScore}</div>
+                        <div><strong>Hangar Tier:</strong> <span style="color:${tierColor}; font-weight:bold;">[${hangarTier}]</span></div>
+                        <div><strong>Median Score:</strong> ${medianScore}</div>
+                        <div><strong>Doctrine Bias:</strong> ${biasStr} (${doctrineMeaning})</div>
+                        <div><strong>Highest Unit:</strong> ${highestUnit.name} (${highestUnit.stats.overallValue})</div>
+                        <div><strong>Lowest Unit:</strong> ${lowestUnit.name} (${lowestUnit.stats.overallValue})</div>
+                    </div>
+                </div>
+                <table style="width:100%; text-align:left; border-collapse: collapse;">
+                            <tr style="border-bottom: 1px solid #000;">
+                                <th>Rank</th><th>Name</th><th>OVR</th><th>Tier</th><th>Bias</th>
+                            </tr>`;
+            
+            parsedUnits.forEach((u, index) => {
+                htmlOut += `<tr>
+                    <td>#${index + 1}</td>
+                    <td>${u.name}</td>
+                    <td><strong>${u.stats.overallValue}</strong></td>
+                    <td style="color:${u.stats.rankColor};">${u.stats.overallRank}</td>
+                    <td>${u.stats.biasString}</td>
+                </tr>`;
+            });
+            
+            htmlOut += `</table>`;
+            resultsBox.innerHTML = htmlOut;
+        }
+
+        function clearBulk() {
+            document.getElementById('bulk-input').value = "";
+            document.getElementById('bulk-results').innerHTML = "Awaiting batch data...";
+        }
+
+        function showError(message) {
+            document.getElementById('error-text').innerText = message;
+            document.getElementById('error-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('error-modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
