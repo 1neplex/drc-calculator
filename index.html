@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -298,6 +299,20 @@
             padding: 15px;
             text-align: center;
         }
+
+        /* --- PRINT MODE --- */
+        @media print {
+            body { background: #fff !important; color: #000 !important; height: auto !important; }
+            .window { border: none !important; box-shadow: none !important; width: 100% !important; height: auto !important; }
+            .title-bar, .tabs, .button-row, .footer-text { display: none !important; }
+            .tab-content { display: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+            .tab-content.active { display: block !important; }
+            fieldset { border: 1px solid #000 !important; margin-bottom: 20px !important; box-shadow: none !important; }
+            legend { background: transparent !important; font-weight: bold !important; border: none !important; }
+            .result-box, .history-box { border: 1px solid #000 !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
+            input, select, textarea { border: none !important; border-bottom: 1px dotted #000 !important; background: transparent !important; }
+            .expand-fieldset { display: block; height: auto !important; }
+        }
     </style>
 </head>
 <body>
@@ -316,6 +331,7 @@
             <button class="tab-btn active" id="btn-tab-single" onclick="switchTab('tab-single')">Single Eval</button>
             <button class="tab-btn" id="btn-tab-matchup" onclick="switchTab('tab-matchup')">Matchup Analysis</button>
             <button class="tab-btn" id="btn-tab-bulk" onclick="switchTab('tab-bulk')">Bulk Processor</button>
+            <button class="tab-btn" id="btn-tab-db" onclick="switchTab('tab-db')">Unit Database</button>
             <button class="tab-btn" id="btn-tab-ref" onclick="switchTab('tab-ref')">Reference Data</button>
         </div>
 
@@ -353,6 +369,8 @@
             <div class="button-row">
                 <button onclick="calculateStats()">Calculate</button>
                 <button onclick="copyToClipboard(event)">Copy Report</button>
+                <button onclick="saveCurrentToDB()">Save to DB</button>
+                <button onclick="window.print()">Print</button>
                 <button onclick="resetForm()">Clear</button>
             </div>
 
@@ -393,6 +411,7 @@
             </div>
             <div class="button-row">
                 <button onclick="calculateMatchup()">Analyze Matchup</button>
+                <button onclick="window.print()">Print</button>
                 <button onclick="clearMatchup()">Clear</button>
             </div>
             <fieldset class="expand-fieldset">
@@ -414,6 +433,7 @@
                 <textarea id="bulk-input" class="history-box bulk-input" placeholder="T-34, 1000, 1400&#10;M4 Sherman, 1100, 1300"></textarea>
                 <div class="button-row" style="margin-bottom: 0;">
                     <button onclick="processBulk()">Process Batch</button>
+                    <button onclick="window.print()">Print</button>
                     <button onclick="clearBulk()">Clear</button>
                 </div>
             </fieldset>
@@ -465,6 +485,32 @@
             </fieldset>
             
             <div class="footer-text" style="margin-top: auto;">
+                © Copyright Dex Ranking Consortium. All Rights Reserved.
+            </div>
+        </div>
+
+        <!-- Unit Database Tab -->
+        <div id="tab-db" class="tab-content">
+            <fieldset class="expand-fieldset">
+                <legend>Local Address Book</legend>
+                <div style="margin-bottom: 8px;">Units saved here persist securely on your terminal's local storage.</div>
+                
+                <div class="result-box" style="padding: 0; overflow-y: auto;">
+                    <table style="width:100%; border-collapse: collapse;" id="db-table">
+                        <tr style="background: #c0c0c0; border-bottom: 2px solid #808080;">
+                            <th style="padding: 4px; text-align: left;">Name</th>
+                            <th style="padding: 4px; text-align: left;">HP</th>
+                            <th style="padding: 4px; text-align: left;">ATK</th>
+                            <th style="padding: 4px; text-align: left;">Actions</th>
+                        </tr>
+                        <tbody id="db-tbody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </fieldset>
+            
+            <div class="footer-text">
                 © Copyright Dex Ranking Consortium. All Rights Reserved.
             </div>
         </div>
@@ -799,6 +845,100 @@
         function closeModal() {
             document.getElementById('error-modal').style.display = 'none';
         }
+
+        // --- Unit Database (Address Book) ---
+        let unitDB = [];
+
+        function loadDB() {
+            const saved = localStorage.getItem('drcUnitDB');
+            if (saved) {
+                unitDB = JSON.parse(saved);
+            }
+            renderDB();
+        }
+
+        function saveDB() {
+            localStorage.setItem('drcUnitDB', JSON.stringify(unitDB));
+            renderDB();
+        }
+
+        function saveCurrentToDB() {
+            const name = document.getElementById('name-input').value || "Unnamed Unit";
+            const hp = parseFloat(document.getElementById('hp-input').value);
+            const atk = parseFloat(document.getElementById('atk-input').value);
+
+            if (isNaN(hp) || isNaN(atk)) {
+                showError("Calculate or enter valid stats first before saving to Database.");
+                return;
+            }
+
+            const existingIdx = unitDB.findIndex(u => u.name.toLowerCase() === name.toLowerCase());
+            if (existingIdx >= 0) {
+                unitDB[existingIdx] = { name, hp, atk };
+            } else {
+                unitDB.push({ name, hp, atk });
+            }
+            
+            saveDB();
+            
+            const btn = document.querySelector('button[onclick="saveCurrentToDB()"]');
+            const originalText = btn.innerText;
+            btn.innerText = "Saved!";
+            setTimeout(() => btn.innerText = originalText, 1500);
+        }
+
+        function renderDB() {
+            const tbody = document.getElementById('db-tbody');
+            tbody.innerHTML = '';
+            
+            if (unitDB.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="padding: 10px; text-align: center;">No units saved yet.</td></tr>';
+                return;
+            }
+
+            unitDB.forEach((unit, idx) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = "1px dotted #a0a0a0";
+                tr.innerHTML = `
+                    <td style="padding: 4px;"><strong>${unit.name}</strong></td>
+                    <td style="padding: 4px;">${unit.hp}</td>
+                    <td style="padding: 4px;">${unit.atk}</td>
+                    <td style="padding: 4px;">
+                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToSingle(${idx})">Load</button>
+                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToMatchup(${idx}, 'A')">Vs A</button>
+                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToMatchup(${idx}, 'B')">Vs B</button>
+                        <button style="padding: 2px 4px; color: #ff0000; font-weight: bold;" onclick="deleteFromDB(${idx})">X</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function loadToSingle(idx) {
+            const u = unitDB[idx];
+            document.getElementById('name-input').value = u.name;
+            document.getElementById('hp-input').value = u.hp;
+            document.getElementById('atk-input').value = u.atk;
+            switchTab('tab-single');
+        }
+
+        function loadToMatchup(idx, slot) {
+            const u = unitDB[idx];
+            document.getElementById('mu-name-' + slot.toLowerCase()).value = u.name;
+            document.getElementById('mu-hp-' + slot.toLowerCase()).value = u.hp;
+            document.getElementById('mu-atk-' + slot.toLowerCase()).value = u.atk;
+            switchTab('tab-matchup');
+        }
+
+        function deleteFromDB(idx) {
+            unitDB.splice(idx, 1);
+            saveDB();
+        }
+
+        // Initialize DB on load
+        window.onload = () => {
+            loadDB();
+        };
     </script>
 </body>
 </html>
