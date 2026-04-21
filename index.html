@@ -398,6 +398,38 @@
             </div>
         </div>
 
+        <!-- Matchup Tab -->
+        <div id="tab-matchup" class="tab-content">
+            <div class="matchup-grid">
+                <fieldset>
+                    <legend>Unit A</legend>
+                    <div class="form-row"><input type="text" id="mu-name-a" placeholder="Name A" style="width:100%; box-sizing: border-box;"></div>
+                    <div class="form-row"><input type="number" id="mu-hp-a" placeholder="HP" style="width:100%; box-sizing: border-box;"></div>
+                    <div class="form-row"><input type="number" id="mu-atk-a" placeholder="ATK" style="width:100%; box-sizing: border-box;"></div>
+                </fieldset>
+                <fieldset>
+                    <legend>Unit B</legend>
+                    <div class="form-row"><input type="text" id="mu-name-b" placeholder="Name B" style="width:100%; box-sizing: border-box;"></div>
+                    <div class="form-row"><input type="number" id="mu-hp-b" placeholder="HP" style="width:100%; box-sizing: border-box;"></div>
+                    <div class="form-row"><input type="number" id="mu-atk-b" placeholder="ATK" style="width:100%; box-sizing: border-box;"></div>
+                </fieldset>
+            </div>
+            <div class="button-row">
+                <button onclick="calculateMatchup()">Analyze Matchup</button>
+                <button onclick="window.print()">Print</button>
+                <button onclick="clearMatchup()">Clear</button>
+            </div>
+            <fieldset class="expand-fieldset">
+                <legend>Tactical Analysis</legend>
+                <div id="matchup-results" class="result-box" style="min-height: 110px;">
+                    Awaiting combatants...
+                </div>
+            </fieldset>
+            <div class="footer-text">
+                © Copyright Dex Ranking Consortium. All Rights Reserved.
+            </div>
+        </div>
+
         <!-- Squad Builder Tab -->
         <div id="tab-squad" class="tab-content">
             <div class="squad-grid">
