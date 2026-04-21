@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -300,6 +299,11 @@
             text-align: center;
         }
 
+        /* --- NEW STYLES --- */
+        .sortable { cursor: pointer; text-decoration: underline; }
+        .sortable:hover { color: #000080; }
+        .squad-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
         /* --- PRINT MODE --- */
         @media print {
             body { background: #fff !important; color: #000 !important; height: auto !important; }
@@ -330,6 +334,7 @@
         <div class="tabs">
             <button class="tab-btn active" id="btn-tab-single" onclick="switchTab('tab-single')">Single Eval</button>
             <button class="tab-btn" id="btn-tab-matchup" onclick="switchTab('tab-matchup')">Matchup Analysis</button>
+            <button class="tab-btn" id="btn-tab-squad" onclick="switchTab('tab-squad')">Squad Builder</button>
             <button class="tab-btn" id="btn-tab-bulk" onclick="switchTab('tab-bulk')">Bulk Processor</button>
             <button class="tab-btn" id="btn-tab-db" onclick="switchTab('tab-db')">Unit Database</button>
             <button class="tab-btn" id="btn-tab-ref" onclick="switchTab('tab-ref')">Reference Data</button>
@@ -393,33 +398,35 @@
             </div>
         </div>
 
-        <!-- Matchup Tab -->
-        <div id="tab-matchup" class="tab-content">
-            <div class="matchup-grid">
-                <fieldset>
-                    <legend>Unit A</legend>
-                    <div class="form-row"><input type="text" id="mu-name-a" placeholder="Name A" style="width:100%"></div>
-                    <div class="form-row"><input type="number" id="mu-hp-a" placeholder="HP" style="width:100%"></div>
-                    <div class="form-row"><input type="number" id="mu-atk-a" placeholder="ATK" style="width:100%"></div>
+        <!-- Squad Builder Tab -->
+        <div id="tab-squad" class="tab-content">
+            <div class="squad-grid">
+                <fieldset class="expand-fieldset">
+                    <legend>Squad Roster</legend>
+                    <div style="margin-bottom: 5px;">Add up to 5 units to analyze platoon synergy.</div>
+                    <div class="result-box" style="padding: 0; min-height: 120px;">
+                        <table style="width:100%; border-collapse: collapse;">
+                            <tr style="background: #c0c0c0; border-bottom: 2px solid #808080;">
+                                <th style="padding: 4px; text-align: left;">Unit</th>
+                                <th style="padding: 4px; text-align: left;">OVR</th>
+                                <th style="padding: 4px; text-align: left;">Act</th>
+                            </tr>
+                            <tbody id="squad-tbody">
+                                <tr><td colspan="3" style="text-align:center; padding: 10px;">Squad empty. Load from DB.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="button-row" style="margin-top: 5px;">
+                        <button onclick="clearSquad()">Clear Squad</button>
+                    </div>
                 </fieldset>
-                <fieldset>
-                    <legend>Unit B</legend>
-                    <div class="form-row"><input type="text" id="mu-name-b" placeholder="Name B" style="width:100%"></div>
-                    <div class="form-row"><input type="number" id="mu-hp-b" placeholder="HP" style="width:100%"></div>
-                    <div class="form-row"><input type="number" id="mu-atk-b" placeholder="ATK" style="width:100%"></div>
+                <fieldset class="expand-fieldset">
+                    <legend>Platoon Analysis</legend>
+                    <div id="squad-results" class="result-box" style="min-height: 120px;">
+                        Awaiting squad members...
+                    </div>
                 </fieldset>
             </div>
-            <div class="button-row">
-                <button onclick="calculateMatchup()">Analyze Matchup</button>
-                <button onclick="window.print()">Print</button>
-                <button onclick="clearMatchup()">Clear</button>
-            </div>
-            <fieldset class="expand-fieldset">
-                <legend>Tactical Analysis</legend>
-                <div id="matchup-results" class="result-box" style="min-height: 110px;">
-                    Awaiting combatants...
-                </div>
-            </fieldset>
             <div class="footer-text">
                 © Copyright Dex Ranking Consortium. All Rights Reserved.
             </div>
@@ -493,14 +500,22 @@
         <div id="tab-db" class="tab-content">
             <fieldset class="expand-fieldset">
                 <legend>Local Address Book</legend>
-                <div style="margin-bottom: 8px;">Units saved here persist securely on your terminal's local storage.</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div>Units saved here persist securely on your terminal.</div>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="db-search" onkeyup="renderDB()" placeholder="Search Name..." style="width: 120px;">
+                        <button onclick="exportDB()">Export (.JSON)</button>
+                        <button onclick="document.getElementById('import-file').click()">Import</button>
+                        <input type="file" id="import-file" style="display:none" accept=".json" onchange="importDB(event)">
+                    </div>
+                </div>
                 
                 <div class="result-box" style="padding: 0; overflow-y: auto;">
                     <table style="width:100%; border-collapse: collapse;" id="db-table">
                         <tr style="background: #c0c0c0; border-bottom: 2px solid #808080;">
-                            <th style="padding: 4px; text-align: left;">Name</th>
-                            <th style="padding: 4px; text-align: left;">HP</th>
-                            <th style="padding: 4px; text-align: left;">ATK</th>
+                            <th class="sortable" onclick="sortDB('name')" style="padding: 4px; text-align: left;">Name ↕</th>
+                            <th class="sortable" onclick="sortDB('hp')" style="padding: 4px; text-align: left;">HP ↕</th>
+                            <th class="sortable" onclick="sortDB('atk')" style="padding: 4px; text-align: left;">ATK ↕</th>
                             <th style="padding: 4px; text-align: left;">Actions</th>
                         </tr>
                         <tbody id="db-tbody">
@@ -541,16 +556,23 @@
             const overallRaw = hp + ((atk * 2) / 3);
             const overallValue = Math.round(overallRaw);
 
+            function getSubTier(val, min, max) {
+                const range = max - min;
+                if (val >= min + (range * 0.66)) return "+";
+                if (val <= min + (range * 0.33)) return "-";
+                return "";
+            }
+
             let overallRank = "";
             let rankColor = "#000";
             if (overallValue >= 3000) { overallRank = "God"; rankColor = "#ff0000"; }
-            else if (overallValue >= 2200) { overallRank = "Best"; rankColor = "#ff8c00"; }
-            else if (overallValue >= 1500) { overallRank = "Good"; rankColor = "#008000"; }
-            else if (overallValue >= 1000) { overallRank = "Decent"; rankColor = "#0000ff"; }
-            else if (overallValue >= 600) { overallRank = "Mid"; rankColor = "#800080"; }
-            else if (overallValue >= 350) { overallRank = "Midass"; rankColor = "#808080"; }
-            else if (overallValue >= 150) { overallRank = "Trash"; rankColor = "#a52a2a"; }
-            else if (overallValue >= 50) { overallRank = "Trashass"; rankColor = "#556b2f"; }
+            else if (overallValue >= 2200) { overallRank = "Best" + getSubTier(overallValue, 2200, 2999); rankColor = "#ff8c00"; }
+            else if (overallValue >= 1500) { overallRank = "Good" + getSubTier(overallValue, 1500, 2199); rankColor = "#008000"; }
+            else if (overallValue >= 1000) { overallRank = "Decent" + getSubTier(overallValue, 1000, 1499); rankColor = "#0000ff"; }
+            else if (overallValue >= 600) { overallRank = "Mid" + getSubTier(overallValue, 600, 999); rankColor = "#800080"; }
+            else if (overallValue >= 350) { overallRank = "Midass" + getSubTier(overallValue, 350, 599); rankColor = "#808080"; }
+            else if (overallValue >= 150) { overallRank = "Trash" + getSubTier(overallValue, 150, 349); rankColor = "#a52a2a"; }
+            else if (overallValue >= 50) { overallRank = "Trashass" + getSubTier(overallValue, 50, 149); rankColor = "#556b2f"; }
             else { overallRank = "Absolute Garbage"; rankColor = "#000000"; }
 
             const biasValueRaw = atk - hp;
@@ -681,31 +703,52 @@
                 return;
             }
 
-            const statsA = evaluateUnit(hpA, atkA);
-            const statsB = evaluateUnit(hpB, atkB);
+            let statsA = evaluateUnit(hpA, atkA);
+            let statsB = evaluateUnit(hpB, atkB);
             const out = document.getElementById('matchup-results');
 
+            // Bias Matchup Modifiers (RPS Logic)
+            let modMessage = "";
+            let effOvrA = statsA.overallValue;
+            let effOvrB = statsB.overallValue;
+
+            const isA_Striker = statsA.biasValue >= 300;
+            const isA_Endurance = statsA.biasValue <= -300;
+            const isB_Striker = statsB.biasValue >= 300;
+            const isB_Endurance = statsB.biasValue <= -300;
+            const isA_Balanced = !isA_Striker && !isA_Endurance;
+            const isB_Balanced = !isB_Striker && !isB_Endurance;
+
+            if (isA_Striker && isB_Endurance) { effOvrA *= 1.10; modMessage = `> <strong>Tactical Advantage:</strong> ${nameA}'s striking power fractures ${nameB}'s endurance (+10% effective OVR).`; }
+            else if (isB_Striker && isA_Endurance) { effOvrB *= 1.10; modMessage = `> <strong>Tactical Advantage:</strong> ${nameB}'s striking power fractures ${nameA}'s endurance (+10% effective OVR).`; }
+            else if (isA_Endurance && isB_Balanced) { effOvrA *= 1.10; modMessage = `> <strong>Tactical Advantage:</strong> ${nameA} outlasts ${nameB}'s balanced assault (+10% effective OVR).`; }
+            else if (isB_Endurance && isA_Balanced) { effOvrB *= 1.10; modMessage = `> <strong>Tactical Advantage:</strong> ${nameB} outlasts ${nameA}'s balanced assault (+10% effective OVR).`; }
+            else if (isA_Balanced && isB_Striker) { effOvrA *= 1.10; modMessage = `> <strong>Tactical Advantage:</strong> ${nameA} exploits the reckless aggression of ${nameB} (+10% effective OVR).`; }
+            else if (isB_Balanced && isA_Striker) { effOvrB *= 1.10; modMessage = `> <strong>Tactical Advantage:</strong> ${nameB} exploits the reckless aggression of ${nameA} (+10% effective OVR).`; }
+
+            // Combat Sim (Win Probability)
+            const totalEff = effOvrA + effOvrB;
+            const winProbA = totalEff > 0 ? ((effOvrA / totalEff) * 100).toFixed(1) : 50;
+            const winProbB = totalEff > 0 ? ((effOvrB / totalEff) * 100).toFixed(1) : 50;
+
             let winnerText = "";
-            if (statsA.overallValue > statsB.overallValue) {
-                winnerText = `<strong style="color:green;">${nameA} wins</strong> the overall stat comparison (+${statsA.overallValue - statsB.overallValue} lead).`;
-            } else if (statsB.overallValue > statsA.overallValue) {
-                winnerText = `<strong style="color:green;">${nameB} wins</strong> the overall stat comparison (+${statsB.overallValue - statsA.overallValue} lead).`;
+            if (effOvrA > effOvrB) {
+                winnerText = `<strong style="color:green;">${nameA} is favored to win</strong> with a ${winProbA}% combat probability.`;
+            } else if (effOvrB > effOvrA) {
+                winnerText = `<strong style="color:green;">${nameB} is favored to win</strong> with a ${winProbB}% combat probability.`;
             } else {
-                winnerText = "<strong>It is a dead tie</strong> in overall stats.";
+                winnerText = "<strong>It is a dead tie</strong> in effective combat probability (50%).";
             }
 
             let flavorText = `<strong>${nameA}</strong> is a ${statsA.biasMeaning.toLowerCase()} while <strong>${nameB}</strong> operates as a ${statsB.biasMeaning.toLowerCase()}. `;
-            
-            if (statsA.biasValue > 500 && statsB.biasValue < -500) {
-                flavorText += `Classic striking power vs endurance wall dynamic.`;
-            }
 
             out.innerHTML = `
                 <div style="display:flex; justify-content:space-between; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px;">
-                    <div><strong>${nameA}</strong><br>OVR: ${statsA.overallValue} <span style="color:${statsA.rankColor}">[${statsA.overallRank}]</span></div>
+                    <div><strong>${nameA}</strong><br>Base OVR: ${statsA.overallValue} <span style="color:${statsA.rankColor}">[${statsA.overallRank}]</span></div>
                     <div><strong>VS</strong></div>
-                    <div style="text-align:right;"><strong>${nameB}</strong><br>OVR: ${statsB.overallValue} <span style="color:${statsB.rankColor}">[${statsB.overallRank}]</span></div>
+                    <div style="text-align:right;"><strong>${nameB}</strong><br>Base OVR: ${statsB.overallValue} <span style="color:${statsB.rankColor}">[${statsB.overallRank}]</span></div>
                 </div>
+                ${modMessage ? `<p style="margin: 5px 0; color: #800080;">${modMessage}</p>` : ''}
                 <p style="margin: 5px 0;">${winnerText}</p>
                 <p style="margin: 5px 0; color: #333;">${flavorText}</p>
             `;
@@ -848,6 +891,7 @@
 
         // --- Unit Database (Address Book) ---
         let unitDB = [];
+        let dbSort = { field: 'name', asc: true };
 
         function loadDB() {
             const saved = localStorage.getItem('drcUnitDB');
@@ -859,6 +903,16 @@
 
         function saveDB() {
             localStorage.setItem('drcUnitDB', JSON.stringify(unitDB));
+            renderDB();
+        }
+
+        function sortDB(field) {
+            if (dbSort.field === field) {
+                dbSort.asc = !dbSort.asc;
+            } else {
+                dbSort.field = field;
+                dbSort.asc = true;
+            }
             renderDB();
         }
 
@@ -891,12 +945,31 @@
             const tbody = document.getElementById('db-tbody');
             tbody.innerHTML = '';
             
-            if (unitDB.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="padding: 10px; text-align: center;">No units saved yet.</td></tr>';
+            let filteredDB = [...unitDB];
+            const searchQ = document.getElementById('db-search') ? document.getElementById('db-search').value.toLowerCase() : '';
+            
+            if (searchQ) {
+                filteredDB = filteredDB.filter(u => u.name.toLowerCase().includes(searchQ));
+            }
+
+            filteredDB.sort((a, b) => {
+                let valA = a[dbSort.field];
+                let valB = b[dbSort.field];
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                
+                if (valA < valB) return dbSort.asc ? -1 : 1;
+                if (valA > valB) return dbSort.asc ? 1 : -1;
+                return 0;
+            });
+
+            if (filteredDB.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="padding: 10px; text-align: center;">No units found.</td></tr>';
                 return;
             }
 
-            unitDB.forEach((unit, idx) => {
+            filteredDB.forEach((unit) => {
+                const originalIdx = unitDB.findIndex(u => u.name === unit.name);
                 const tr = document.createElement('tr');
                 tr.style.borderBottom = "1px dotted #a0a0a0";
                 tr.innerHTML = `
@@ -904,14 +977,114 @@
                     <td style="padding: 4px;">${unit.hp}</td>
                     <td style="padding: 4px;">${unit.atk}</td>
                     <td style="padding: 4px;">
-                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToSingle(${idx})">Load</button>
-                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToMatchup(${idx}, 'A')">Vs A</button>
-                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToMatchup(${idx}, 'B')">Vs B</button>
-                        <button style="padding: 2px 4px; color: #ff0000; font-weight: bold;" onclick="deleteFromDB(${idx})">X</button>
+                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToSingle(${originalIdx})">Load</button>
+                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToMatchup(${originalIdx}, 'A')">Vs A</button>
+                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="loadToMatchup(${originalIdx}, 'B')">Vs B</button>
+                        <button style="padding: 2px 4px; margin-right: 2px;" onclick="addToSquad(${originalIdx})">Squad</button>
+                        <button style="padding: 2px 4px; color: #ff0000; font-weight: bold;" onclick="deleteFromDB(${originalIdx})">X</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        // --- Import / Export DB ---
+        function exportDB() {
+            if(unitDB.length === 0) { showError("Database is empty."); return; }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(unitDB));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", "drc_database.json");
+            document.body.appendChild(dl);
+            dl.click();
+            dl.remove();
+        }
+
+        function importDB(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        unitDB = imported;
+                        saveDB();
+                        document.getElementById('import-file').value = "";
+                    } else throw new Error();
+                } catch (err) {
+                    showError("Invalid JSON file format.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Squad Builder Functions ---
+        let currentSquad = [];
+
+        function addToSquad(idx) {
+            if (currentSquad.length >= 5) {
+                showError("Platoon max capacity is 5 units.");
+                return;
+            }
+            currentSquad.push(unitDB[idx]);
+            switchTab('tab-squad');
+            renderSquad();
+        }
+
+        function removeFromSquad(squadIdx) {
+            currentSquad.splice(squadIdx, 1);
+            renderSquad();
+        }
+
+        function clearSquad() {
+            currentSquad = [];
+            renderSquad();
+        }
+
+        function renderSquad() {
+            const tbody = document.getElementById('squad-tbody');
+            const resBox = document.getElementById('squad-results');
+            tbody.innerHTML = '';
+
+            if (currentSquad.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 10px;">Squad empty. Load from DB.</td></tr>';
+                resBox.innerHTML = "Awaiting squad members...";
+                return;
+            }
+
+            let sumOvr = 0, sumHP = 0, sumAtk = 0;
+
+            currentSquad.forEach((u, i) => {
+                const stats = evaluateUnit(u.hp, u.atk);
+                sumOvr += stats.overallValue;
+                sumHP += u.hp;
+                sumAtk += u.atk;
+
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = "1px dotted #ccc";
+                tr.innerHTML = `
+                    <td style="padding: 4px;">${u.name}</td>
+                    <td style="padding: 4px;">${stats.overallValue}</td>
+                    <td style="padding: 4px;"><button style="padding:2px; color:red;" onclick="removeFromSquad(${i})">X</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const avgHP = Math.round(sumHP / currentSquad.length);
+            const avgAtk = Math.round(sumAtk / currentSquad.length);
+            const squadStats = evaluateUnit(avgHP, avgAtk);
+
+            resBox.innerHTML = `
+                <div style="border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px;">
+                    <strong>PLATOON SUMMARY</strong>
+                </div>
+                <div><strong>Total Squad OVR:</strong> ${sumOvr}</div>
+                <div><strong>Avg Unit OVR:</strong> ${squadStats.overallValue}</div>
+                <div><strong>Squad Tier:</strong> <span style="color:${squadStats.rankColor}; font-weight:bold;">[${squadStats.overallRank}]</span></div>
+                <br>
+                <div><strong>Squad Doctrine:</strong> ${squadStats.biasString} (${squadStats.biasMeaning})</div>
+            `;
         }
 
         function loadToSingle(idx) {
@@ -934,6 +1107,22 @@
             unitDB.splice(idx, 1);
             saveDB();
         }
+
+        // --- Keyboard Shortcuts ---
+        document.addEventListener('keydown', function(e) {
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+            
+            if (e.key === 'Enter' && isInput) {
+                if (document.getElementById('tab-single').classList.contains('active')) calculateStats();
+                if (document.getElementById('tab-matchup').classList.contains('active')) calculateMatchup();
+            }
+
+            // Alt+S to save
+            if (e.altKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                saveCurrentToDB();
+            }
+        });
 
         // Initialize DB on load
         window.onload = () => {
